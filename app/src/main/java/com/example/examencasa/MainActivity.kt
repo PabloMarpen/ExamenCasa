@@ -1,8 +1,11 @@
 package com.example.examencasa
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -16,7 +19,9 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
@@ -37,16 +42,24 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         R.drawable.relax
     )
 
-
+    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            llamar()
+        } else {
+            Toast.makeText(this, "Permiso de llamada denegado", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+
         val seleccion = findViewById<TextView>(R.id.ciudadSeleccionada)
         val boton = findViewById<Button>(R.id.button)
         val selectorCiudades = findViewById<Spinner>(R.id.spinner)
         val nombre = findViewById<EditText>(R.id.editTextText)
+        val soporte = findViewById<Button>(R.id.buttonSoporte)
         val adaptadorPersonalizado = AdaptadorPersonalizado(this, R.layout.lineasspiner, tipo)
         selectorCiudades.adapter = adaptadorPersonalizado
         selectorCiudades.onItemSelectedListener = this
@@ -64,8 +77,24 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             }
         }
 
+        soporte.setOnClickListener{
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                llamar()
+            } else {
+                requestPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
+            }
+        }
 
+    }
 
+    private fun llamar() {
+        try {
+            val intent = Intent(Intent.ACTION_DIAL)
+            intent.data = Uri.parse("tel:555-123-456")
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error al realizar la llamada", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
